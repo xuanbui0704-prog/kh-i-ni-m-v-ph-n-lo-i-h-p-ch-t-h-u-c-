@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Hành Trình Truy Tìm Mật Mã Carbon - Hóa Học 11</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Google Fonts hỗ trợ tiếng Việt chuẩn đẹp -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
+                        display: ['"Quicksand"', 'sans-serif'],
+                    },
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Đảm bảo không tràn ngang trên mọi thiết bị di động */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f0fdf4;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Định dạng chuẩn xác cho công thức hóa học <sub> và <sup> không bị dính chữ hoặc lệch dòng */
+        .chem-formula {
+            font-variant-numeric: lining-nums;
+            letter-spacing: 0.01em;
+            display: inline-block;
+            line-height: 1.3;
+        }
+        .chem-formula sub, sub {
+            font-size: 0.72em;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+            bottom: -0.25em;
+            font-weight: 700;
+        }
+        .chem-formula sup, sup {
+            font-size: 0.72em;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+            top: -0.45em;
+            font-weight: 700;
+        }
+
+        /* Nền họa tiết vòng Benzene SVG nhẹ nhàng */
+        .benzene-bg {
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='92' viewBox='0 0 80 92' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2310b981' stroke-width='1.2' stroke-opacity='0.12'%3E%3Cpolygon points='40,4 74,23 74,63 40,82 6,63 6,23'/%3E%3Ccircle cx='40' cy='43' r='18'/%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* Hiệu ứng nút bấm nổi 3D thân thiện */
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        /* Hiệu ứng rung khi chọn sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Hiệu ứng nảy nhẹ khi xuất hiện */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.94) translateY(8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Hiệu ứng xoay phân tử nhẹ */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(3deg); }
+        }
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        /* Hiệu ứng tia laser quét quang phổ trong Chặng 1 */
+        @keyframes laserScan {
+            0% { top: 6%; opacity: 0.2; }
+            50% { top: 88%; opacity: 1; }
+            100% { top: 6%; opacity: 0.2; }
+        }
+        .scanner-laser {
+            position: absolute;
+            left: 4%;
+            right: 4%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #10b981, #34d399, #10b981, transparent);
+            box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.8);
+            border-radius: 999px;
+            animation: laserScan 2.2s ease-in-out infinite;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="benzene-bg min-h-screen flex flex-col justify-between selection:bg-emerald-200 selection:text-emerald-900">
+
+    <!-- THANH HEADER CỐ ĐỊNH HIỂN THỊ ĐIỂM & TIẾN ĐỘ -->
+    <header id="game-header" class="hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-sm">
+        <div class="max-w-3xl mx-auto px-3 py-2.5 sm:px-5">
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <!-- Thông tin người chơi & Chặng -->
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                        C<sub>6</sub>
+                    </div>
+                    <div class="min-w-0">
+                        <p id="header-player-name" class="text-xs sm:text-sm font-bold text-slate-800 truncate">Nhà Thám Hiểm</p>
+                        <p id="header-stage-label" class="text-[11px] font-semibold text-emerald-600 truncate">Chặng 1/4: Thung Lũng Đời Sống</p>
+                    </div>
+                </div>
+
+                <!-- Điểm số, Combo & Âm thanh -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                    <!-- Combo Badge -->
+                    <div id="combo-badge" class="hidden items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 border border-orange-200 text-xs font-extrabold">
+                        <span>🔥</span>
+                        <span id="combo-count">x2</span>
+                    </div>
+                    <!-- Score -->
+                    <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-extrabold">
+                        <span>💎</span>
+                        <span id="score-display">0</span>
+                    </div>
+                    <!-- Nút bật/tắt âm thanh -->
+                    <button onclick="toggleSound()" id="sound-btn" title="Bật/Tắt âm thanh" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm transition">
+                        🔊
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh tiến trình 4 Chặng -->
+            <div class="grid grid-cols-4 gap-1.5">
+                <div id="prog-1" class="h-1.5 rounded-full bg-emerald-500 transition-all duration-300"></div>
+                <div id="prog-2" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+                <div id="prog-3" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+                <div id="prog-4" class="h-1.5 rounded-full bg-slate-200 transition-all duration-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- KHU VỰC NỘI DUNG CHÍNH -->
+    <main class="flex-grow w-full max-w-3xl mx-auto px-3 py-4 sm:px-5 sm:py-6 flex flex-col justify-center">
+
+        <!-- ================= MÀN HÌNH 0: CHÀO MỪNG & NHẬP THÔNG TIN ================= -->
+        <section id="screen-welcome" class="animate-pop">
+            <div class="bg-white rounded-3xl shadow-xl border border-emerald-100 overflow-hidden">
+                <!-- Banner đầu trang -->
+                <div class="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 p-5 sm:p-8 text-white relative overflow-hidden">
+                    <!-- Minh họa SVG phân tử Methane & Vòng Benzene -->
+                    <svg class="absolute -right-6 -bottom-6 w-40 h-40 opacity-20 animate-float" viewBox="0 0 120 120" fill="none">
+                        <polygon points="60,10 103,35 103,85 60,110 17,85 17,35" stroke="white" stroke-width="4"/>
+                        <circle cx="60" cy="60" r="24" stroke="white" stroke-width="3"/>
+                        <circle cx="60" cy="10" r="6" fill="#fbbf24"/>
+                        <circle cx="103" cy="35" r="6" fill="#fbbf24"/>
+                        <circle cx="103" cy="85" r="6" fill="#fbbf24"/>
+                        <circle cx="60" cy="110" r="6" fill="#fbbf24"/>
+                        <circle cx="17" cy="85" r="6" fill="#fbbf24"/>
+                        <circle cx="17" cy="35" r="6" fill="#fbbf24"/>
+                    </svg>
+
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold uppercase tracking-wider mb-3">
+                        <span>🧪 Hóa Học 11 • Chương trình GDPT 2018</span>
+                    </div>
+                    <h1 class="font-display text-2xl sm:text-4xl font-extrabold leading-tight mb-2">
+                        Hành Trình Truy Tìm<br>
+                        <span class="text-amber-300">Mật Mã Carbon</span>
+                    </h1>
+                    <p class="text-emerald-50 text-sm sm:text-base leading-relaxed max-w-xl">
+                        Chào mừng bạn bước vào thế giới kỳ diệu của <strong>Hóa học hữu cơ</strong> — nơi nguyên tố Carbon kiến tạo nên sự sống, hương thơm, dược phẩm và vật liệu quanh ta!
+                    </p>
+                </div>
+
+                <!-- Nội dung giới thiệu & Form đăng ký -->
+                <div class="p-5 sm:p-7 space-y-5">
+                    <!-- Bản đồ 4 chặng mini -->
+                    <div class="bg-emerald-50/70 rounded-2xl p-3.5 sm:p-4 border border-emerald-100">
+                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 mb-2.5 flex items-center gap-1.5">
+                            <span>🗺️</span> Bản Đồ 4 Chặng Khám Phá
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                            <div class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border border-emerald-100">
+                                <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shrink-0">1</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Biệt Đội Phá Án Carbon</p>
+                                    <p class="text-[11px] text-slate-500">Quét quang phổ 8 mẫu vật đời sống</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border border-emerald-100">
+                                <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 font-bold flex items-center justify-center shrink-0">2</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Cánh Cổng Phân Biệt</p>
+                                    <p class="text-[11px] text-slate-500">Truy tìm "kẻ giả mạo" Carbon</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border border-emerald-100">
+                                <span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0">3</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Mê Cung Phân Loại</p>
+                                    <p class="text-[11px] text-slate-500">Hydrocarbon hay Dẫn xuất?</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border border-emerald-100">
+                                <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 font-bold flex items-center justify-center shrink-0">4</span>
+                                <div>
+                                    <p class="font-bold text-slate-800">Đỉnh Cao Tri Thức</p>
+                                    <p class="text-[11px] text-slate-500">Giải mã đặc tính phân tử</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form nhập tên học sinh -->
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label for="input-name" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Họ và tên học sinh <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="text" id="input-name" placeholder="Ví dụ: Nguyễn Minh Anh" maxlength="40"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-medium text-slate-800 transition">
+                            </div>
+                            <div>
+                                <label for="input-class" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Lớp (Tùy chọn)
+                                </label>
+                                <input type="text" id="input-class" placeholder="VD: 11A1" maxlength="15"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-medium text-slate-800 transition">
+                            </div>
+                        </div>
+                        <p id="name-error" class="hidden text-xs font-semibold text-rose-600">
+                            ⚠️ Bạn hãy nhập họ và tên để ghi danh lên Bảng Vàng thành tích nhé!
+                        </p>
+                    </div>
+
+                    <!-- Nút bắt đầu -->
+                    <button onclick="startGame()" class="btn-3d w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-display font-extrabold text-base sm:text-lg tracking-wide flex items-center justify-center gap-2 cursor-pointer">
+                        <span>🚀 KHỞI HÀNH NGAY</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MÀN HÌNH CHƠI CHÍNH (4 CHẶNG) ================= -->
+        <section id="screen-play" class="hidden space-y-4">
+            <!-- Khung nội dung câu hỏi / thử thách động -->
+            <div id="stage-container" class="bg-white rounded-3xl shadow-lg border border-emerald-100 p-4 sm:p-6 animate-pop">
+                <!-- Nội dung từng chặng sẽ được render bằng JS -->
+            </div>
+        </section>
+
+        <!-- ================= MÀN HÌNH TỔNG KẾT & BẢNG VINH DANH ================= -->
+        <section id="screen-result" class="hidden animate-pop">
+            <div id="certificate-card" class="bg-white rounded-3xl shadow-xl border-2 border-amber-300 overflow-hidden">
+                <!-- Header chứng nhận -->
+                <div class="bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900 p-5 sm:p-7 text-center text-white relative">
+                    <div class="inline-block px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-xs font-bold uppercase tracking-wider mb-2">
+                        🏆 Hoàn Thành Hành Trình Hóa Hữu Cơ 11
+                    </div>
+                    <div id="result-badge-icon" class="w-16 h-16 sm:w-20 sm:h-20 mx-auto my-2 rounded-2xl bg-gradient-to-br from-amber-300 to-orange-500 flex items-center justify-center text-3xl sm:text-4xl shadow-lg border-2 border-white">
+                        🧪
+                    </div>
+                    <h2 id="result-rank-title" class="font-display text-xl sm:text-3xl font-extrabold text-amber-300 mt-1">
+                        Bậc Thầy Mật Mã Carbon
+                    </h2>
+                    <p id="result-student-info" class="text-sm sm:text-base font-semibold text-emerald-100 mt-1">
+                        Học sinh: Nguyễn Minh Anh • Lớp: 11A1
+                    </p>
+                </div>
+
+                <!-- Thống kê chi tiết -->
+                <div class="p-4 sm:p-6 space-y-4">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-2.5 sm:p-3">
+                            <p class="text-[11px] font-bold text-amber-700 uppercase">Tổng điểm</p>
+                            <p id="final-score" class="text-xl sm:text-2xl font-extrabold text-amber-600 mt-0.5">0</p>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 sm:p-3">
+                            <p class="text-[11px] font-bold text-emerald-700 uppercase">Chính xác</p>
+                            <p id="final-accuracy" class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-0.5">0/34</p>
+                        </div>
+                        <div class="bg-sky-50 border border-sky-200 rounded-2xl p-2.5 sm:p-3">
+                            <p class="text-[11px] font-bold text-sky-700 uppercase">Thời gian</p>
+                            <p id="final-time" class="text-xl sm:text-2xl font-extrabold text-sky-600 mt-0.5">00:00</p>
+                        </div>
+                    </div>
+
+                    <!-- Tổng kết kiến thức trọng tâm & Nhận xét cá nhân hóa -->
+                    <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2.5">
+                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <span>📋</span> Đánh Giá Năng Lực & Ghi Nhớ Trọng Tâm
+                        </h3>
+                        <p id="result-feedback-text" class="text-xs sm:text-sm text-slate-700 leading-relaxed"></p>
+                        
+                        <div class="pt-2 border-t border-slate-200 text-xs text-slate-600 space-y-1.5">
+                            <p class="font-bold text-emerald-800">🔑 Cẩm nang ghi nhớ nhanh Bài 1:</p>
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><strong>Hợp chất hữu cơ</strong> là hợp chất của carbon (trừ <span class="chem-formula">CO, CO<sub>2</sub></span>, muối carbonate <span class="chem-formula">CO<sub>3</sub><sup>2-</sup></span>, cyanide <span class="chem-formula">CN<sup>-</sup></span>, carbide <span class="chem-formula">CaC<sub>2</sub>, Al<sub>4</sub>C<sub>3</sub></span>...).</li>
+                                <li><strong>Phân loại theo thành phần:</strong> <em>Hydrocarbon</em> (chỉ có C, H) và <em>Dẫn xuất của hydrocarbon</em> (ngoài C, H còn có O, N, halogen, S...).</li>
+                                <li><strong>Đặc điểm chung:</strong> Liên kết chủ yếu là cộng hóa trị; nhiệt độ nóng chảy/sôi thấp, dễ bay hơi, dễ cháy; phản ứng thường chậm, không hoàn toàn, theo nhiều hướng.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Hướng dẫn nộp bài & Nút thao tác -->
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center text-xs text-emerald-800 font-medium">
+                        📸 <strong>Mẹo nộp bài:</strong> Em hãy chụp ảnh màn hình thẻ thành tích này để gửi cho thầy/cô giáo nhé!
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+                        <button onclick="copyResultSummary()" id="btn-copy" class="btn-3d flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <span>📋 Sao chép kết quả</span>
+                        </button>
+                        <button onclick="resetGame()" class="btn-3d flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <span>🔄 Chơi lại phá kỷ lục</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER NHỎ GỌN -->
+    <footer class="text-center py-3 px-4 text-[11px] text-slate-500">
+        Phiếu học tập tương tác Hóa học 11 • Chương trình GDPT 2018
+    </footer>
+
+    <!-- HỘP THOẠI PHẢN HỒI CHI TIẾT (MODAL / DRAWER THÂN THIỆN MOBILE) -->
+    <div id="feedback-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4">
+        <div id="feedback-box" class="bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 animate-pop space-y-4">
+            <div class="flex items-start gap-3">
+                <div id="fb-icon" class="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0">
+                    ✅
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 id="fb-title" class="font-display font-extrabold text-lg sm:text-xl">Chính xác tuyệt đối!</h3>
+                    <p id="fb-points" class="text-xs font-bold text-amber-600">+100 điểm • Chuỗi đúng: 1</p>
+                </div>
+            </div>
+            <div id="fb-explanation" class="bg-slate-50 rounded-2xl p-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed border border-slate-200">
+                Giải thích chi tiết ở đây.
+            </div>
+            <button id="fb-next-btn" onclick="closeFeedbackAndNext()" class="btn-3d w-full py-3 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base cursor-pointer">
+                Tiếp tục hành trình ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- MÃ JAVASCRIPT ĐIỀU KHIỂN TRÒ CHƠI & ÂM THANH -->
+    <script>
+        // ==================== 1. HỆ THỐNG ÂM THANH WEB AUDIO API ====================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function playTone(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    // Tiếng ting vui tai (2 nốt tăng dần)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.09); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.18); // G5
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'scan') {
+                    // Tiếng bíp máy quét quang phổ hiện đại
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.12);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    osc.start(now);
+                    osc.stop(now + 0.16);
+                } else if (type === 'wrong') {
+                    // Tiếng buzz trầm nhẹ khi chọn nhầm
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(165, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'win') {
+                    // Giai điệu chiến thắng
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        g.gain.setValueAtTime(0.18, now + idx * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.45);
+                        o.start(now + idx * 0.12);
+                        o.stop(now + idx * 0.12 + 0.45);
+                    });
+                }
+            } catch (e) {
+                // Bỏ qua lỗi âm thanh nếu trình duyệt chặn
+            }
+        }
+
+        // ==================== 2. DỮ LIỆU KIẾN THỨC HÓA HỌC 11 (GDPT 2018) ====================
+        
+        // CHẶNG 1: Biệt Đội Phá Án - Máy Quét Quang Phổ 8 Mẫu Vật Đời Sống
+        const stage1Specimens = [
+            {
+                id: "vinegar",
+                code: "MV-01",
+                name: "Cốc giấm ăn",
+                formula: "CH<sub>3</sub>COOH",
+                origin: "Gia vị nhà bếp (Acetic acid 2–5%)",
+                spectrumHint: "Phát hiện khung mạch 2 nguyên tử Carbon liên kết trực tiếp với Hydrogen và nhóm -COOH.",
+                type: "organic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><path d="M16 14H32L35 38C35 39.6 33.6 41 32 41H16C14.4 41 13 39.6 13 38L16 14Z" fill="#FEF3C7" stroke="#D97706" stroke-width="2.5"/><path d="M14.5 25H33.5" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3 2"/><rect x="19" y="8" width="10" height="6" rx="2" fill="#FDE68A" stroke="#D97706" stroke-width="2"/></svg>`,
+                explanation: "<strong>Giấm ăn (<span class='chem-formula'>CH<sub>3</sub>COOH</span>)</strong> là <em>Hợp chất hữu cơ</em> (carboxylic acid) được tạo ra từ quá trình lên men giấm tự nhiên, rất quen thuộc trong gian bếp!"
+            },
+            {
+                id: "co2_extinguisher",
+                code: "MV-02",
+                name: "Khí bình chữa cháy",
+                formula: "CO<sub>2</sub>",
+                origin: "Bình cứu hỏa khí lạnh Carbon dioxide",
+                spectrumHint: "Cảnh báo bẫy! Phân tử chứa 1 nguyên tử Carbon nhưng chỉ liên kết với 2 nguyên tử Oxygen.",
+                type: "inorganic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><rect x="17" y="15" width="14" height="26" rx="5" fill="#FEE2E2" stroke="#DC2626" stroke-width="2.5"/><path d="M24 15V10H31M24 10H18" stroke="#991B1B" stroke-width="2.5" stroke-linecap="round"/><path d="M31 10L37 16" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+                explanation: "<strong>Bẫy kinh điển! <span class='chem-formula'>CO<sub>2</sub></span></strong> tuy chứa nguyên tố Carbon nhưng là <em>Hợp chất vô cơ</em> (oxide của carbon), thuộc nhóm ngoại lệ không xếp vào hóa học hữu cơ."
+            },
+            {
+                id: "vitaminc",
+                code: "MV-03",
+                name: "Viên sủi Vitamin C",
+                formula: "C<sub>6</sub>H<sub>8</sub>O<sub>6</sub>",
+                origin: "Dược phẩm tăng sức đề kháng (Ascorbic acid)",
+                spectrumHint: "Quang phổ ghi nhận vòng 5 cạnh chứa Carbon, Hydrogen và nhiều nhóm -OH.",
+                type: "organic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" fill="#FFEDD5" stroke="#EA580C" stroke-width="2.5"/><text x="24" y="28" text-anchor="middle" fill="#C2410C" font-weight="800" font-size="11">Vit C</text><circle cx="36" cy="12" r="2.5" fill="#FB923C"/><circle cx="12" cy="11" r="2" fill="#FDBA74"/></svg>`,
+                explanation: "<strong>Vitamin C (<span class='chem-formula'>C<sub>6</sub>H<sub>8</sub>O<sub>6</sub></span>)</strong> là <em>Hợp chất hữu cơ</em> thiết yếu cho cơ thể người, có nhiều trong cam, chanh và rau xanh."
+            },
+            {
+                id: "seashell",
+                code: "MV-04",
+                name: "Vỏ sò / Đá vôi",
+                formula: "CaCO<sub>3</sub>",
+                origin: "Khoáng vật tự nhiên (Calcium carbonate)",
+                spectrumHint: "Cảnh báo bẫy! Dù có nguồn gốc từ vỏ sinh vật biển nhưng chứa gốc muối carbonate (CO<sub>3</sub><sup>2-</sup>).",
+                type: "inorganic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><path d="M10 30C10 19 16 11 24 11C32 11 38 19 38 30C38 34 32 37 24 37C16 37 10 34 10 30Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="2.5"/><path d="M24 11V37M17 14L20 36M31 14L28 36" stroke="#38BDF8" stroke-width="1.8"/></svg>`,
+                explanation: "<strong>Cẩn thận nhầm lẫn!</strong> Dù vỏ sò do sinh vật tạo ra, thành phần chính <span class='chem-formula'>CaCO<sub>3</sub></span> là muối carbonate nên thuộc loại <em>Hợp chất vô cơ</em>!"
+            },
+            {
+                id: "gas_can",
+                code: "MV-05",
+                name: "Bình gas mini",
+                formula: "C<sub>4</sub>H<sub>10</sub>",
+                origin: "Nhiên liệu đun nấu (Butane)",
+                spectrumHint: "Quang phổ chỉ phát hiện 2 nguyên tố Carbon và Hydrogen liên kết cộng hóa trị.",
+                type: "organic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><rect x="16" y="14" width="16" height="26" rx="4" fill="#DBEAFE" stroke="#2563EB" stroke-width="2.5"/><rect x="21" y="9" width="6" height="5" rx="1" fill="#93C5FD" stroke="#2563EB" stroke-width="2"/><path d="M24 22C24 22 28 26 28 29C28 31.2 26.2 33 24 33C21.8 33 20 31.2 20 29C20 26 24 22 24 22Z" fill="#F97316"/></svg>`,
+                explanation: "<strong>Khí gas (<span class='chem-formula'>C<sub>4</sub>H<sub>10</sub></span>)</strong> là <em>Hợp chất hữu cơ</em> (hydrocarbon thuộc dãy alkane), dễ cháy và tỏa nhiều nhiệt."
+            },
+            {
+                id: "urea",
+                code: "MV-06",
+                name: "Phân đạm Urea",
+                formula: "(NH<sub>2</sub>)<sub>2</sub>CO",
+                origin: "Phân bón nông nghiệp (Chất hữu cơ đầu tiên được tổng hợp nhân tạo)",
+                spectrumHint: "Phân tử chứa C, O, N, H — dấu ấn lịch sử năm 1828 của nhà hóa học F. Wöhler!",
+                type: "organic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="15" fill="#DCFCE7" stroke="#16A34A" stroke-width="2.5"/><circle cx="19" cy="21" r="2.5" fill="#15803D"/><circle cx="29" cy="22" r="2.5" fill="#15803D"/><circle cx="23" cy="29" r="2.5" fill="#15803D"/></svg>`,
+                explanation: "<strong>Urea (<span class='chem-formula'>(NH<sub>2</sub>)<sub>2</sub>CO</span>)</strong> là <em>Hợp chất hữu cơ</em> nổi tiếng vì năm 1828, F. Wöhler đã tổng hợp thành công chất này từ chất vô cơ, mở ra kỷ nguyên Hóa học hữu cơ hiện đại!"
+            },
+            {
+                id: "salt",
+                code: "MV-07",
+                name: "Lọ muối ăn",
+                formula: "NaCl",
+                origin: "Gia vị thiết yếu (Sodium chloride)",
+                spectrumHint: "Máy quét báo TÍN HIỆU CARBON = 0%! Chỉ gồm ion Na<sup>+</sup> và Cl<sup>-</sup>.",
+                type: "inorganic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><rect x="15" y="16" width="18" height="24" rx="4" fill="#F1F5F9" stroke="#475569" stroke-width="2.5"/><path d="M17 16C17 12 20 10 24 10C28 10 31 12 31 16" fill="#CBD5E1" stroke="#475569" stroke-width="2.5"/><circle cx="21" cy="26" r="1.5" fill="#64748B"/><circle cx="27" cy="30" r="1.5" fill="#64748B"/><circle cx="22" cy="34" r="1.5" fill="#64748B"/></svg>`,
+                explanation: "<strong>Muối ăn (<span class='chem-formula'>NaCl</span>)</strong> hoàn toàn không chứa nguyên tố Carbon nên chắc chắn là <em>Hợp chất vô cơ</em>!"
+            },
+            {
+                id: "alcohol",
+                code: "MV-08",
+                name: "Chai cồn sát khuẩn",
+                formula: "C<sub>2</sub>H<sub>5</sub>OH",
+                origin: "Dung dịch y tế (Ethanol 70°)",
+                spectrumHint: "Quang phổ ghi nhận mạch 2 Carbon gắn nhóm chức -OH đặc trưng của alcohol.",
+                type: "organic",
+                svg: `<svg class="w-11 h-11 mx-auto" viewBox="0 0 48 48" fill="none"><rect x="16" y="16" width="16" height="25" rx="3" fill="#CCFBF1" stroke="#0D9488" stroke-width="2.5"/><path d="M21 16V11H27V16" stroke="#0F766E" stroke-width="2.5"/><path d="M24 24V32M20 28H28" stroke="#0D9488" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+                explanation: "<strong>Cồn y tế (<span class='chem-formula'>C<sub>2</sub>H<sub>5</sub>OH</span>)</strong> là <em>Hợp chất hữu cơ</em> (dẫn xuất của hydrocarbon) rất gần gũi trong y tế và đời sống."
+            }
+        ];
+
+        // CHẶNG 2: Cánh Cổng Phân Biệt - Truy Tìm "Kẻ Giả Mạo" Carbon (12 thẻ phân loại)
+        const stage2Items = [
+            { formula: "CH<sub>4</sub>", name: "Methane (Khí bùn ao, khí thiên nhiên)", type: "organic", reason: "Hợp chất của C và H (alkane đơn giản nhất) → Hợp chất hữu cơ." },
+            { formula: "CO<sub>2</sub>", name: "Carbon dioxide (Khí gây hiệu ứng nhà kính)", type: "inorganic", reason: "Oxide của carbon (<span class='chem-formula'>CO, CO<sub>2</sub></span>) thuộc nhóm ngoại lệ vô cơ!" },
+            { formula: "C<sub>2</sub>H<sub>5</sub>OH", name: "Ethanol (Cồn y tế, cồn sinh học)", type: "organic", reason: "Hợp chất của C, H, O (alcohol) → Hợp chất hữu cơ quen thuộc." },
+            { formula: "NaHCO<sub>3</sub>", name: "Sodium hydrogencarbonate (Baking soda)", type: "inorganic", reason: "Muối hydrogencarbonate (<span class='chem-formula'>HCO<sub>3</sub><sup>-</sup></span>) thuộc nhóm muối carbonate vô cơ!" },
+            { formula: "CaCO<sub>3</sub>", name: "Calcium carbonate (Đá vôi, vỏ sò)", type: "inorganic", reason: "Muối carbonate (<span class='chem-formula'>CO<sub>3</sub><sup>2-</sup></span>) là hợp chất vô cơ." },
+            { formula: "CH<sub>3</sub>COOH", name: "Acetic acid (Thành phần chính của giấm ăn)", type: "organic", reason: "Hợp chất của C, H, O (carboxylic acid) → Hợp chất hữu cơ." },
+            { formula: "HCN", name: "Hydrogen cyanide (Acid cực độc)", type: "inorganic", reason: "Hợp chất cyanide (<span class='chem-formula'>CN<sup>-</sup></span>) thuộc nhóm ngoại lệ vô cơ!" },
+            { formula: "CaC<sub>2</sub>", name: "Calcium carbide (Đất đèn)", type: "inorganic", reason: "Carbide kim loại (<span class='chem-formula'>CaC<sub>2</sub></span>) thuộc nhóm hợp chất vô cơ!" },
+            { formula: "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>", name: "Glucose (Đường nho, cung cấp năng lượng)", type: "organic", reason: "Hợp chất carbohydrate chứa C, H, O → Hợp chất hữu cơ." },
+            { formula: "CO", name: "Carbon monoxide (Khí độc sinh ra khi đốt than thiếu khí)", type: "inorganic", reason: "Oxide của carbon (<span class='chem-formula'>CO</span>) là hợp chất vô cơ!" },
+            { formula: "CH<sub>3</sub>NH<sub>2</sub>", name: "Methylamine (Chất gây mùi tanh của cá)", type: "organic", reason: "Hợp chất chứa C, H, N (amine) → Hợp chất hữu cơ." },
+            { formula: "Al<sub>4</sub>C<sub>3</sub>", name: "Aluminium carbide", type: "inorganic", reason: "Carbide kim loại (<span class='chem-formula'>Al<sub>4</sub>C<sub>3</sub></span>) thuộc nhóm hợp chất vô cơ!" }
+        ];
+
+        // CHẶNG 3: Mê Cung Phân Loại - Hydrocarbon vs Dẫn xuất của hydrocarbon (10 thẻ)
+        const stage3Items = [
+            { formula: "C<sub>2</sub>H<sub>6</sub>", name: "Ethane (Khí trong dầu mỏ)", category: "hydrocarbon", reason: "Phân tử chỉ gồm 2 nguyên tố C và H → <strong>Hydrocarbon</strong>." },
+            { formula: "CH<sub>3</sub>OH", name: "Methanol (Cồn công nghiệp)", category: "derivative", reason: "Ngoài C và H còn có nguyên tố O → <strong>Dẫn xuất của hydrocarbon</strong>." },
+            { formula: "C<sub>2</sub>H<sub>4</sub>", name: "Ethylene (Khí kích thích quả mau chín)", category: "hydrocarbon", reason: "Phân tử chỉ chứa C và H → <strong>Hydrocarbon</strong> (alkene)." },
+            { formula: "CH<sub>3</sub>CHO", name: "Acetaldehyde", category: "derivative", reason: "Ngoài C và H còn có nguyên tố O → <strong>Dẫn xuất của hydrocarbon</strong> (aldehyde)." },
+            { formula: "C<sub>2</sub>H<sub>2</sub>", name: "Acetylene (Khí dùng trong đèn xì hàn cắt kim loại)", category: "hydrocarbon", reason: "Phân tử chỉ chứa C và H → <strong>Hydrocarbon</strong> (alkyne)." },
+            { formula: "CH<sub>3</sub>COOCH<sub>3</sub>", name: "Methyl acetate (Dung môi hữu cơ)", category: "derivative", reason: "Ngoài C và H còn có nguyên tố O → <strong>Dẫn xuất của hydrocarbon</strong> (ester)." },
+            { formula: "C<sub>6</sub>H<sub>6</sub>", name: "Benzene (Vòng thơm đặc trưng)", category: "hydrocarbon", reason: "Phân tử chỉ chứa 6 nguyên tử C và 6 nguyên tử H → <strong>Hydrocarbon</strong> thơm (arene)." },
+            { formula: "C<sub>2</sub>H<sub>5</sub>Br", name: "Bromoethane", category: "derivative", reason: "Ngoài C và H còn có nguyên tố halogen Br → <strong>Dẫn xuất của hydrocarbon</strong>." },
+            { formula: "C<sub>6</sub>H<sub>5</sub>NH<sub>2</sub>", name: "Aniline (Nguyên liệu sản xuất phẩm nhuộm)", category: "derivative", reason: "Ngoài C và H còn có nguyên tố N → <strong>Dẫn xuất của hydrocarbon</strong> (amine)." },
+            { formula: "HCOOH", name: "Formic acid (Có trong nọc kiến)", category: "derivative", reason: "Ngoài C và H còn có nguyên tố O → <strong>Dẫn xuất của hydrocarbon</strong>." }
+        ];
+
+        // CHẶNG 4: Đỉnh Cao Tri Thức - Giải Mã Đặc Tính Bí Ẩn (4 câu hỏi tình huống & đặc điểm chung)
+        const stage4Questions = [
+            {
+                badge: "Tình huống thực tế 1 • Tính chất vật lí",
+                question: "Khi mở nắp một lọ nước hoa hoặc lọ tinh dầu bạc hà trong phòng, chỉ sau vài giây cả căn phòng đã ngập tràn hương thơm. Hiện tượng này chứng tỏ đặc điểm nào của hợp chất hữu cơ?",
+                options: [
+                    { text: "Đa số hợp chất hữu cơ có nhiệt độ sôi thấp nên rất dễ bay hơi.", isCorrect: true },
+                    { text: "Hợp chất hữu cơ có liên kết ion rất bền vững với nhiệt.", isCorrect: false },
+                    { text: "Hợp chất hữu cơ tan vô hạn trong không khí do tạo liên kết kim loại.", isCorrect: false },
+                    { text: "Hợp chất hữu cơ luôn ở thể khí ở mọi điều kiện nhiệt độ.", isCorrect: false }
+                ],
+                explanation: "Do liên kết trong phân tử hợp chất hữu cơ chủ yếu là <strong>liên kết cộng hóa trị</strong> và lực tương tác giữa các phân tử yếu, nên hợp chất hữu cơ thường có <em>nhiệt độ nóng chảy, nhiệt độ sôi thấp và dễ bay hơi</em> (tỏa hương nhanh)."
+            },
+            {
+                badge: "Tình huống thực tế 2 • Tính tan & An toàn phòng cháy",
+                question: "Khi xảy ra đám cháy xăng, dầu (hỗn hợp các hydrocarbon lỏng), người ta KHÔNG dùng nước để dập tắt mà dùng cát khô hoặc bình chữa cháy bọt/CO<sub>2</sub>. Giải thích hóa học nào sau đây là ĐÚNG?",
+                options: [
+                    { text: "Xăng, dầu nhẹ hơn nước và không tan trong nước, nên sẽ nổi lên trên mặt nước khiến đám cháy lan rộng hơn.", isCorrect: true },
+                    { text: "Xăng, dầu phản ứng mãnh liệt với nước sinh ra khí hydrogen gây nổ.", isCorrect: false },
+                    { text: "Xăng, dầu tan rất tốt trong nước tạo thành dung dịch dễ cháy.", isCorrect: false },
+                    { text: "Nước làm tăng nhiệt độ sôi của xăng, dầu khiến lửa cháy to hơn.", isCorrect: false }
+                ],
+                explanation: "Đa số hợp chất hữu cơ (đặc biệt là hydrocarbon như xăng, dầu) <strong>thường không tan hoặc ít tan trong nước</strong> nhưng tan nhiều trong dung môi hữu cơ. Vì xăng dầu nhẹ hơn nước nên sẽ nổi lên trên và tiếp tục cháy lan nếu xịt nước vào!"
+            },
+            {
+                badge: "Giải mã cấu tạo • Đặc điểm liên kết",
+                question: "Trong phân tử hợp chất hữu cơ, loại liên kết hóa học nào chiếm chủ yếu giữa các nguyên tử?",
+                options: [
+                    { text: "Liên kết cộng hóa trị.", isCorrect: true },
+                    { text: "Liên kết ion.", isCorrect: false },
+                    { text: "Liên kết kim loại.", isCorrect: false },
+                    { text: "Liên kết cho - nhận hoàn toàn.", isCorrect: false }
+                ],
+                explanation: "Carbon có độ âm điện trung bình (2,55) và có 4 electron lớp ngoài cùng, nên nguyên tử carbon dễ dàng góp chung electron với chính nó và các phi kim khác (H, O, N, halogen...) tạo thành <strong>liên kết cộng hóa trị</strong>."
+            },
+            {
+                badge: "Giải mã phản ứng • Đặc điểm phản ứng hữu cơ",
+                question: "Phát biểu nào sau đây mô tả ĐÚNG đặc điểm chung của các phản ứng hóa học hữu cơ?",
+                options: [
+                    { text: "Thường xảy ra chậm, không hoàn toàn, theo nhiều hướng khác nhau và thường cần đun nóng hoặc xúc tác.", isCorrect: true },
+                    { text: "Luôn xảy ra tức thời ngay ở nhiệt độ thường và chỉ tạo ra duy nhất một sản phẩm.", isCorrect: false },
+                    { text: "Luôn xảy ra hoàn toàn với hiệu suất 100% mà không cần xúc tác.", isCorrect: false },
+                    { text: "Chỉ xảy ra trong dung dịch nước giữa các ion tự do.", isCorrect: false }
+                ],
+                explanation: "Vì liên kết cộng hóa trị trong phân tử hữu cơ khá bền và ít phân cực, nên các phản ứng hữu cơ thường <strong>xảy ra chậm, không hoàn toàn, theo nhiều hướng khác nhau</strong> (tạo hỗn hợp sản phẩm) và thường cần đun nóng hoặc có mặt chất xúc tác."
+            }
+        ];
+
+        // ==================== 3. TRẠNG THÁI TRÒ CHƠI (GAME STATE) ====================
+        let gameState = {
+            playerName: "",
+            playerClass: "",
+            score: 0,
+            combo: 0,
+            correctCount: 0,
+            totalQuestions: 8 + 12 + 10 + 4, // 34 thử thách tổng cộng
+            currentStage: 1, // 1, 2, 3, 4
+            subIndex: 0,     // Vị trí câu hỏi / thẻ hiện tại trong chặng
+            stage1Resolved: {}, // Lưu trạng thái giám định 8 mẫu vật Chặng 1: { id: { isCorrect, chosen } }
+            stage1SelectedId: "vinegar", // Mẫu vật đang đặt trên bàn quét quang phổ
+            startTime: null,
+            timerInterval: null,
+            elapsedSeconds: 0,
+            pendingNextAction: null,
+            stageMistakes: { 1: 0, 2: 0, 3: 0, 4: 0 }
+        };
+
+        // ==================== 4. KHỞI ĐỘNG & CHUYỂN MÀN HÌNH ====================
+        function startGame() {
+            const nameInput = document.getElementById('input-name').value.trim();
+            const classInput = document.getElementById('input-class').value.trim();
+            const errEl = document.getElementById('name-error');
+
+            if (!nameInput) {
+                errEl.classList.remove('hidden');
+                document.getElementById('input-name').focus();
+                document.getElementById('input-name').classList.add('border-rose-500');
+                return;
+            }
+
+            errEl.classList.add('hidden');
+            initAudio();
+
+            gameState.playerName = nameInput;
+            gameState.playerClass = classInput;
+            gameState.score = 0;
+            gameState.combo = 0;
+            gameState.correctCount = 0;
+            gameState.currentStage = 1;
+            gameState.subIndex = 0;
+            gameState.stage1Resolved = {};
+            gameState.stage1SelectedId = stage1Specimens[0].id;
+            gameState.stageMistakes = { 1: 0, 2: 0, 3: 0, 4: 0 };
+            gameState.startTime = Date.now();
+
+            // Cập nhật Header
+            const displayLabel = classInput ? `${nameInput} (${classInput})` : nameInput;
+            document.getElementById('header-player-name').textContent = displayLabel;
+            updateScoreUI();
+
+            // Chuyển sang màn hình chơi
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('screen-play').classList.remove('hidden');
+
+            renderCurrentStage();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-display').textContent = gameState.score;
+            const comboBadge = document.getElementById('combo-badge');
+            if (gameState.combo >= 2) {
+                comboBadge.classList.remove('hidden');
+                comboBadge.classList.add('flex');
+                document.getElementById('combo-count').textContent = `x${gameState.combo}`;
+            } else {
+                comboBadge.classList.add('hidden');
+                comboBadge.classList.remove('flex');
+            }
+
+            // Cập nhật thanh tiến trình 4 chặng
+            for (let i = 1; i <= 4; i++) {
+                const bar = document.getElementById(`prog-${i}`);
+                if (i < gameState.currentStage) {
+                    bar.className = "h-1.5 rounded-full bg-emerald-500 transition-all duration-300";
+                } else if (i === gameState.currentStage) {
+                    bar.className = "h-1.5 rounded-full bg-amber-400 transition-all duration-300";
+                } else {
+                    bar.className = "h-1.5 rounded-full bg-slate-200 transition-all duration-300";
+                }
+            }
+        }
+
+        function awardPoints(isCorrect) {
+            if (isCorrect) {
+                gameState.combo++;
+                gameState.correctCount++;
+                const bonus = Math.min((gameState.combo - 1) * 15, 60);
+                const earned = 100 + bonus;
+                gameState.score += earned;
+                playTone('correct');
+                updateScoreUI();
+                return earned;
+            } else {
+                gameState.combo = 0;
+                gameState.stageMistakes[gameState.currentStage]++;
+                playTone('wrong');
+                updateScoreUI();
+                return 0;
+            }
+        }
+
+        // ==================== 5. HỘP THOẠI PHẢN HỒI CHI TIẾT ====================
+        function showFeedback(isCorrect, pointsEarned, explanationHTML, nextCallback) {
+            const modal = document.getElementById('feedback-modal');
+            const box = document.getElementById('feedback-box');
+            const icon = document.getElementById('fb-icon');
+            const title = document.getElementById('fb-title');
+            const pts = document.getElementById('fb-points');
+            const exp = document.getElementById('fb-explanation');
+            const btn = document.getElementById('fb-next-btn');
+
+            if (isCorrect) {
+                box.className = "bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-emerald-400 animate-pop space-y-4";
+                icon.className = "w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shrink-0";
+                icon.textContent = "🎉";
+                title.className = "font-display font-extrabold text-lg sm:text-xl text-emerald-700";
+                title.textContent = gameState.combo >= 3 ? `Tuyệt vời! Chuỗi ${gameState.combo} câu đúng!` : "Chính xác!";
+                pts.className = "text-xs font-bold text-amber-600";
+                pts.textContent = `+${pointsEarned} điểm thưởng`;
+                btn.className = "btn-3d w-full py-3 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base cursor-pointer";
+            } else {
+                box.className = "bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-rose-400 animate-pop space-y-4";
+                icon.className = "w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl shrink-0";
+                icon.textContent = "💡";
+                title.className = "font-display font-extrabold text-lg sm:text-xl text-rose-700";
+                title.textContent = "Chưa chính xác rồi! Ghi nhớ ngay nhé:";
+                pts.className = "text-xs font-bold text-slate-500";
+                pts.textContent = "Đừng lo, hãy xem lời giải chi tiết bên dưới";
+                btn.className = "btn-3d w-full py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm sm:text-base cursor-pointer";
+            }
+
+            exp.innerHTML = explanationHTML;
+            gameState.pendingNextAction = nextCallback;
+            modal.classList.remove('hidden');
+        }
+
+        function closeFeedbackAndNext() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            if (typeof gameState.pendingNextAction === 'function') {
+                gameState.pendingNextAction();
+            }
+        }
+
+        // ==================== 6. ĐIỀU PHỐI HIỂN THỊ 4 CHẶNG ====================
+        function renderCurrentStage() {
+            const stageNames = {
+                1: "Chặng 1/4: Biệt Đội Phá Án Carbon",
+                2: "Chặng 2/4: Cánh Cổng Phân Biệt",
+                3: "Chặng 3/4: Mê Cung Phân Loại",
+                4: "Chặng 4/4: Đỉnh Cao Tri Thức"
+            };
+            document.getElementById('header-stage-label').textContent = stageNames[gameState.currentStage];
+            updateScoreUI();
+
+            if (gameState.currentStage === 1) renderStage1();
+            else if (gameState.currentStage === 2) renderStage2();
+            else if (gameState.currentStage === 3) renderStage3();
+            else if (gameState.currentStage === 4) renderStage4();
+        }
+
+        // -------------------- CHẶNG 1: BIỆT ĐỘI PHÁ ÁN - MÁY QUÉT QUANG PHỔ CARBON --------------------
+        function selectStage1Specimen(specimenId) {
+            gameState.stage1SelectedId = specimenId;
+            playTone('scan');
+            renderStage1();
+        }
+
+        function renderStage1() {
+            const container = document.getElementById('stage-container');
+            const resolvedCount = Object.keys(gameState.stage1Resolved).length;
+            const totalSpecimens = stage1Specimens.length;
+            const activeItem = stage1Specimens.find(s => s.id === gameState.stage1SelectedId) || stage1Specimens[0];
+            const activeResult = gameState.stage1Resolved[activeItem.id];
+
+            // Lưới 8 mẫu vật thu thập từ hiện trường phòng thí nghiệm (4 cột trên desktop, 4 cột gọn trên mobile)
+            const gridHTML = stage1Specimens.map(item => {
+                const res = gameState.stage1Resolved[item.id];
+                const isSelected = item.id === activeItem.id;
+
+                let cardStyle = "bg-white border-slate-200 hover:border-emerald-400";
+                let statusBadge = `<span class="text-[10px] font-bold text-slate-400">${item.code}</span>`;
+
+                if (res) {
+                    if (res.isCorrect) {
+                        cardStyle = "bg-emerald-50/90 border-emerald-400";
+                        statusBadge = `<span class="text-[10px] font-extrabold text-emerald-700">✅ Đúng</span>`;
+                    } else {
+                        cardStyle = "bg-rose-50/90 border-rose-300";
+                        statusBadge = `<span class="text-[10px] font-extrabold text-rose-600">💡 Đã xem</span>`;
+                    }
+                }
+                if (isSelected) {
+                    cardStyle += " ring-2 ring-amber-400 border-amber-500 shadow-md scale-[1.02]";
+                }
+
+                return `
+                    <button onclick="selectStage1Specimen('${item.id}')" class="p-2 rounded-2xl border-2 transition-all flex flex-col items-center justify-between text-center cursor-pointer ${cardStyle}">
+                        <div class="w-full flex items-center justify-between px-0.5 mb-0.5">
+                            ${statusBadge}
+                            ${isSelected ? '<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>' : ''}
+                        </div>
+                        <div class="my-0.5 scale-90 sm:scale-100">${item.svg}</div>
+                        <p class="text-[11px] sm:text-xs font-bold text-slate-800 leading-tight line-clamp-1 w-full">${item.name}</p>
+                        <span class="chem-formula text-[10px] font-bold text-slate-500 mt-0.5">${item.formula}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // Khu vực bảng điều khiển giám định hoặc nút tiếp tục
+            let actionAreaHTML = "";
+            if (activeResult) {
+                actionAreaHTML = `
+                    <div class="mt-3 p-3.5 rounded-2xl ${activeResult.isCorrect ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-100' : 'bg-rose-950/80 border border-rose-500/50 text-rose-100'} text-xs sm:text-sm leading-relaxed">
+                        <p class="font-extrabold mb-1 ${activeResult.isCorrect ? 'text-emerald-300' : 'text-amber-300'}">
+                            ${activeResult.isCorrect ? '🎯 HỒ SƠ ĐÃ XÁC MINH CHÍNH XÁC:' : '🔍 KẾT LUẬN GIÁM ĐỊNH LẠI:'}
+                        </p>
+                        <p>${activeItem.explanation}</p>
+                    </div>
+                `;
+            } else {
+                actionAreaHTML = `
+                    <div class="grid grid-cols-2 gap-2.5 mt-3">
+                        <button onclick="handleStage1Verdict('organic')" class="btn-3d py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-display font-extrabold text-xs sm:text-sm flex flex-col items-center justify-center gap-0.5 cursor-pointer">
+                            <span>🌿 HỢP CHẤT HỮU CƠ</span>
+                            <span class="text-[10px] font-medium text-emerald-100">Hợp chất của Carbon</span>
+                        </button>
+                        <button onclick="handleStage1Verdict('inorganic')" class="btn-3d py-3 px-3 rounded-2xl bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white font-display font-extrabold text-xs sm:text-sm flex flex-col items-center justify-center gap-0.5 cursor-pointer">
+                            <span>🪨 HỢP CHẤT VÔ CƠ</span>
+                            <span class="text-[10px] font-medium text-slate-300">Không C / Ngoại lệ</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            const proceedBannerHTML = resolvedCount === totalSpecimens ? `
+                <div class="pt-2 animate-pop">
+                    <button onclick="goToStage2()" class="btn-3d w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-display font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer">
+                        <span>🎉 HOÀN THÀNH GIÁM ĐỊNH 8/8! SANG CHẶNG 2 ➔</span>
+                    </button>
+                </div>
+            ` : `
+                <p class="text-center text-[11px] font-semibold text-slate-500 pt-1">
+                    👆 Chạm vào từng mẫu vật trên khay để đưa vào <strong>Máy Quét Quang Phổ</strong> và chốt kết luận!
+                </p>
+            `;
+
+            container.innerHTML = `
+                <div class="space-y-3.5 animate-pop">
+                    <!-- Thanh trạng thái nhiệm vụ thám tử -->
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
+                            🕵️ TRẠM 1 • BIỆT ĐỘI PHÁ ÁN CARBON
+                        </span>
+                        <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">
+                            Đã giám định: ${resolvedCount}/${totalSpecimens} mẫu
+                        </span>
+                    </div>
+
+                    <!-- Lời dẫn nhập vai kịch tính -->
+                    <div class="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-950 leading-relaxed">
+                        🚨 <strong>Hồ sơ khẩn:</strong> Phòng thí nghiệm vừa thu thập 8 mẫu vật quen thuộc từ đời sống. Hãy dùng <strong>Máy Quét Quang Phổ Carbon</strong> để vạch trần đâu là <em>Hợp chất hữu cơ</em> thực thụ và đâu là <em>"kẻ giả mạo" vô cơ</em>!
+                    </div>
+
+                    <!-- BÀN QUÉT QUANG PHỔ CARBON (GLASSMORPHISM LAB SCANNER) -->
+                    <div class="relative rounded-3xl bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 p-4 sm:p-5 text-white shadow-xl border border-emerald-500/40 overflow-hidden">
+                        ${!activeResult ? '<div class="scanner-laser"></div>' : ''}
+                        
+                        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-2.5">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                MÁY QUÉT QUANG PHỔ • ${activeItem.code}
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-white/10 text-amber-300">
+                                ${activeResult ? 'ĐÃ LƯU HỒ SƠ' : 'CHỜ KẾT LUẬN'}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3.5 sm:gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+                            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/95 flex items-center justify-center shrink-0 shadow-inner">
+                                ${activeItem.svg}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-baseline gap-2">
+                                    <h3 class="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
+                                        ${activeItem.name}
+                                    </h3>
+                                    <span class="chem-formula px-2 py-0.5 rounded-lg bg-amber-400/20 border border-amber-300/40 text-amber-300 font-extrabold text-sm sm:text-base">
+                                        ${activeItem.formula}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] sm:text-xs text-emerald-200 font-medium mt-1">
+                                    📍 Nguồn gốc: ${activeItem.origin}
+                                </p>
+                                <p class="text-[11px] text-slate-300 mt-1 leading-snug">
+                                    🔬 <em>Tín hiệu máy quét:</em> ${activeItem.spectrumHint}
+                                </p>
+                            </div>
+                        </div>
+
+                        ${actionAreaHTML}
+                    </div>
+
+                    <!-- KHAY 8 MẪU VẬT HIỆN TRƯỜNG -->
+                    <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5 pt-1">
+                        ${gridHTML}
+                    </div>
+
+                    ${proceedBannerHTML}
+                </div>
+            `;
+        }
+
+        function handleStage1Verdict(choice) {
+            const activeItem = stage1Specimens.find(s => s.id === gameState.stage1SelectedId);
+            if (!activeItem || gameState.stage1Resolved[activeItem.id]) return;
+
+            const isCorrect = (choice === activeItem.type);
+            const earned = awardPoints(isCorrect);
+
+            gameState.stage1Resolved[activeItem.id] = {
+                isCorrect: isCorrect,
+                chosen: choice
+            };
+
+            // Tìm mẫu vật tiếp theo chưa giám định để tự động nạp lên máy quét sau khi đóng modal
+            const nextUnresolved = stage1Specimens.find(s => !gameState.stage1Resolved[s.id]);
+
+            showFeedback(
+                isCorrect,
+                earned,
+                `<div class="space-y-1.5">
+                    <p class="font-bold text-slate-800">Mẫu vật: ${activeItem.name} (<span class="chem-formula">${activeItem.formula}</span>)</p>
+                    <p>${activeItem.explanation}</p>
+                </div>`,
+                () => {
+                    if (nextUnresolved) {
+                        gameState.stage1SelectedId = nextUnresolved.id;
+                    }
+                    renderStage1();
+                }
+            );
+        }
+
+        function goToStage2() {
+            gameState.currentStage = 2;
+            gameState.subIndex = 0;
+            renderCurrentStage();
+        }
+
+        // -------------------- CHẶNG 2: CÁNH CỔNG PHÂN BIỆT (HỮU CƠ vs VÔ CƠ) --------------------
+        function renderStage2() {
+            const item = stage2Items[gameState.subIndex];
+            const container = document.getElementById('stage-container');
+            const progressPercent = Math.round((gameState.subIndex / stage2Items.length) * 100);
+
+            container.innerHTML = `
+                <div class="space-y-4 animate-pop">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">
+                            🛡️ CHẶNG 2 • THẺ ${gameState.subIndex + 1}/${stage2Items.length}
+                        </span>
+                        <span class="text-xs font-bold text-slate-500">Đã giải mã: ${progressPercent}%</span>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-600 leading-relaxed">
+                        ⚠️ <strong>Cảnh báo:</strong> Cả 12 chất này đều chứa nguyên tố <strong>Carbon (C)</strong>! Hãy tinh mắt phát hiện đâu là <em>Hợp chất hữu cơ</em> và đâu là <em>"Kẻ giả mạo" (Hợp chất vô cơ ngoại lệ)</em>.
+                    </div>
+
+                    <!-- Thẻ phân tử trung tâm -->
+                    <div id="stage2-card" class="my-2 bg-gradient-to-br from-emerald-50 via-white to-amber-50 border-2 border-emerald-300 rounded-3xl p-6 sm:p-8 text-center shadow-inner relative overflow-hidden">
+                        <div class="inline-block px-3 py-0.5 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-500 mb-3">
+                            MẪU VẬT SỐ #${gameState.subIndex + 1}
+                        </div>
+                        <div class="chem-formula text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-wide my-2">
+                            ${item.formula}
+                        </div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-600 mt-2">
+                            ${item.name}
+                        </p>
+                    </div>
+
+                    <!-- 2 Rương phân loại lớn dễ bấm trên điện thoại -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <button onclick="handleStage2Choice('organic')" class="btn-3d p-3.5 sm:p-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white flex flex-col items-center justify-center text-center gap-1 cursor-pointer">
+                            <span class="text-2xl sm:text-3xl">🌿</span>
+                            <span class="font-display font-extrabold text-sm sm:text-base leading-tight">Hợp chất<br>HỮU CƠ</span>
+                        </button>
+
+                        <button onclick="handleStage2Choice('inorganic')" class="btn-3d p-3.5 sm:p-4 rounded-2xl bg-slate-700 hover:bg-slate-600 text-white flex flex-col items-center justify-center text-center gap-1 cursor-pointer">
+                            <span class="text-2xl sm:text-3xl">🪨</span>
+                            <span class="font-display font-extrabold text-sm sm:text-base leading-tight">Hợp chất<br>VÔ CƠ</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleStage2Choice(choice) {
+            const item = stage2Items[gameState.subIndex];
+            const isCorrect = (choice === item.type);
+            const earned = awardPoints(isCorrect);
+
+            const advance = () => {
+                if (gameState.subIndex + 1 < stage2Items.length) {
+                    gameState.subIndex++;
+                    renderStage2();
+                } else {
+                    gameState.currentStage = 3;
+                    gameState.subIndex = 0;
+                    renderCurrentStage();
+                }
+            };
+
+            if (isCorrect) {
+                // Nếu đúng: chuyển nhanh mượt mà sau 350ms để tạo nhịp đua tốc độ cuốn hút
+                const card = document.getElementById('stage2-card');
+                card.classList.remove('border-emerald-300');
+                card.classList.add('border-emerald-500', 'bg-emerald-100/70');
+                card.innerHTML += `<div class="mt-2 text-xs font-extrabold text-emerald-700">✅ Chuẩn xác! +${earned} điểm</div>`;
+                setTimeout(advance, 450);
+            } else {
+                // Nếu sai: hiện modal giải thích chi tiết quy tắc loại trừ để học sinh hiểu sâu
+                showFeedback(false, 0, `<strong class="chem-formula text-base">${item.formula}</strong>: ${item.reason}<br><br><span class="text-xs text-slate-500">💡 Nhớ nhé: Oxide của C (<span class="chem-formula">CO, CO<sub>2</sub></span>), muối carbonate (<span class="chem-formula">CO<sub>3</sub><sup>2-</sup>, HCO<sub>3</sub><sup>-</sup></span>), cyanide (<span class="chem-formula">CN<sup>-</sup></span>), carbide (<span class="chem-formula">CaC<sub>2</sub>, Al<sub>4</sub>C<sub>3</sub></span>) là hợp chất vô cơ!</span>`, advance);
+            }
+        }
+
+        // -------------------- CHẶNG 3: MÊ CUNG PHÂN LOẠI (HYDROCARBON vs DẪN XUẤT) --------------------
+        function renderStage3() {
+            const item = stage3Items[gameState.subIndex];
+            const container = document.getElementById('stage-container');
+
+            container.innerHTML = `
+                <div class="space-y-4 animate-pop">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold">
+                            🧭 CHẶNG 3 • PHÂN TỬ ${gameState.subIndex + 1}/${stage3Items.length}
+                        </span>
+                        <span class="text-xs font-bold text-slate-500">Phân loại theo thành phần</span>
+                    </div>
+
+                    <div class="bg-sky-50 border border-sky-200 rounded-2xl p-3 text-xs text-sky-900 leading-relaxed">
+                        🔍 <strong>Quy tắc Mê Cung:</strong> Dựa vào thành phần nguyên tố, hãy đưa mỗi hợp chất hữu cơ về đúng cánh cửa của nó!
+                    </div>
+
+                    <!-- Thẻ phân tử cần phân loại -->
+                    <div id="stage3-card" class="my-2 bg-gradient-to-br from-sky-50 via-white to-indigo-50 border-2 border-sky-300 rounded-3xl p-6 sm:p-8 text-center shadow-inner">
+                        <div class="inline-block px-3 py-0.5 rounded-full bg-white border border-sky-200 text-[11px] font-bold text-sky-700 mb-3">
+                            PHÂN TỬ HỮU CƠ #${gameState.subIndex + 1}
+                        </div>
+                        <div class="chem-formula text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-wide my-2">
+                            ${item.formula}
+                        </div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-600 mt-2">
+                            ${item.name}
+                        </p>
+                    </div>
+
+                    <!-- 2 Cánh cửa phân loại -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <button onclick="handleStage3Choice('hydrocarbon')" class="btn-3d p-3.5 sm:p-4 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white flex flex-col items-center justify-center text-center gap-1 cursor-pointer">
+                            <span class="text-2xl sm:text-3xl">⛽</span>
+                            <span class="font-display font-extrabold text-sm sm:text-base leading-tight">HYDROCARBON</span>
+                            <span class="text-[11px] text-teal-100 font-medium">(Chỉ có C và H)</span>
+                        </button>
+
+                        <button onclick="handleStage3Choice('derivative')" class="btn-3d p-3.5 sm:p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white flex flex-col items-center justify-center text-center gap-1 cursor-pointer">
+                            <span class="text-2xl sm:text-3xl">🧬</span>
+                            <span class="font-display font-extrabold text-sm sm:text-base leading-tight">DẪN XUẤT</span>
+                            <span class="text-[11px] text-indigo-100 font-medium">(Có thêm O, N, Br...)</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleStage3Choice(choice) {
+            const item = stage3Items[gameState.subIndex];
+            const isCorrect = (choice === item.category);
+            const earned = awardPoints(isCorrect);
+
+            const advance = () => {
+                if (gameState.subIndex + 1 < stage3Items.length) {
+                    gameState.subIndex++;
+                    renderStage3();
+                } else {
+                    gameState.currentStage = 4;
+                    gameState.subIndex = 0;
+                    renderCurrentStage();
+                }
+            };
+
+            if (isCorrect) {
+                const card = document.getElementById('stage3-card');
+                card.classList.remove('border-sky-300');
+                card.classList.add('border-emerald-500', 'bg-emerald-50');
+                card.innerHTML += `<div class="mt-2 text-xs font-extrabold text-emerald-700">✅ Chính xác! +${earned} điểm</div>`;
+                setTimeout(advance, 450);
+            } else {
+                showFeedback(false, 0, `<strong class="chem-formula text-base">${item.formula}</strong>: ${item.reason}`, advance);
+            }
+        }
+
+        // -------------------- CHẶNG 4: ĐỈNH CAO TRI THỨC (ĐẶC ĐIỂM & TÌNH HUỐNG) --------------------
+        function renderStage4() {
+            const q = stage4Questions[gameState.subIndex];
+            const container = document.getElementById('stage-container');
+            const letters = ['A', 'B', 'C', 'D'];
+
+            let optionsHTML = q.options.map((opt, idx) => `
+                <button onclick="handleStage4Answer(${idx})" class="text-left p-3.5 sm:p-4 rounded-2xl border-2 border-slate-200 hover:border-purple-500 hover:bg-purple-50/50 transition flex items-start gap-3 cursor-pointer active:scale-[0.99]">
+                    <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-800 font-extrabold text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
+                        ${letters[idx]}
+                    </span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-800 leading-relaxed">
+                        ${opt.text}
+                    </span>
+                </button>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="space-y-4 animate-pop">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-extrabold">
+                            🏔️ CHẶNG 4 • THỬ THÁCH ${gameState.subIndex + 1}/${stage4Questions.length}
+                        </span>
+                        <span class="text-xs font-bold text-purple-600">${q.badge}</span>
+                    </div>
+
+                    <h2 class="font-display font-extrabold text-base sm:text-lg text-slate-800 leading-relaxed bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
+                        ${q.question}
+                    </h2>
+
+                    <div class="grid grid-cols-1 gap-2.5 pt-1">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleStage4Answer(selectedIndex) {
+            const q = stage4Questions[gameState.subIndex];
+            const chosen = q.options[selectedIndex];
+            const earned = awardPoints(chosen.isCorrect);
+
+            showFeedback(chosen.isCorrect, earned, q.explanation, () => {
+                if (gameState.subIndex + 1 < stage4Questions.length) {
+                    gameState.subIndex++;
+                    renderStage4();
+                } else {
+                    finishGame();
+                }
+            });
+        }
+
+        // ==================== 7. HOÀN THÀNH & BẢNG VINH DANH ====================
+        function finishGame() {
+            playTone('win');
+
+            const endTime = Date.now();
+            const totalSeconds = Math.max(1, Math.floor((endTime - gameState.startTime) / 1000));
+            const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const secs = String(totalSeconds % 60).padStart(2, '0');
+
+            // Ẩn màn hình chơi, hiện màn hình tổng kết
+            document.getElementById('game-header').classList.add('hidden');
+            document.getElementById('screen-play').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            // Xác định danh hiệu theo tỷ lệ chính xác
+            const accuracyRatio = gameState.correctCount / gameState.totalQuestions;
+            let rankTitle = "";
+            let badgeIcon = "";
+            let feedbackText = "";
+
+            if (accuracyRatio >= 0.9) {
+                rankTitle = "Bậc Thầy Mật Mã Carbon";
+                badgeIcon = "👑";
+                feedbackText = `Xuất sắc! Em đã làm chủ hoàn toàn kiến thức mở đầu về Hóa học hữu cơ: nhận diện chính xác hợp chất hữu cơ, không bị đánh lừa bởi các hợp chất vô cơ chứa carbon và phân loại thành thạo Hydrocarbon với Dẫn xuất.`;
+            } else if (accuracyRatio >= 0.7) {
+                rankTitle = "Chuyên Gia Phân Tử Hữu Cơ";
+                badgeIcon = "🧪";
+                feedbackText = `Rất tốt! Em đã nắm vững phần lớn kiến thức về hợp chất hữu cơ và phân loại chất. Hãy xem lại một vài trường hợp ngoại lệ vô cơ của carbon (như CO, CO<sub>2</sub>, muối carbonate, carbide) để đạt điểm tuyệt đối nhé!`;
+            } else {
+                rankTitle = "Nhà Thám Hiểm Carbon Triển Vọng";
+                badgeIcon = "🌱";
+                feedbackText = `Chúc mừng em đã hoàn thành hành trình! Để chinh phục điểm cao hơn, em hãy ôn kỹ 2 quy tắc vàng: (1) Loại trừ các chất vô cơ chứa C; (2) Phân biệt Hydrocarbon (chỉ có C, H) và Dẫn xuất (có thêm O, N, halogen...).`;
+            }
+
+            const classText = gameState.playerClass ? ` • Lớp: ${gameState.playerClass}` : "";
+            document.getElementById('result-student-info').textContent = `Học sinh: ${gameState.playerName}${classText}`;
+            document.getElementById('result-rank-title').textContent = rankTitle;
+            document.getElementById('result-badge-icon').textContent = badgeIcon;
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('final-accuracy').textContent = `${gameState.correctCount}/${gameState.totalQuestions}`;
+            document.getElementById('final-time').textContent = `${mins}:${secs}`;
+            document.getElementById('result-feedback-text').innerHTML = feedbackText;
+        }
+
+        function copyResultSummary() {
+            const classText = gameState.playerClass ? ` - Lớp: ${gameState.playerClass}` : "";
+            const scoreText = document.getElementById('final-score').textContent;
+            const accText = document.getElementById('final-accuracy').textContent;
+            const timeText = document.getElementById('final-time').textContent;
+            const rankText = document.getElementById('result-rank-title').textContent;
+
+            const summary = `🏆 KẾT QUẢ HÀNH TRÌNH MẬT MÃ CARBON (HÓA 11)\n` +
+                            `👤 Học sinh: ${gameState.playerName}${classText}\n` +
+                            `🎖️ Danh hiệu: ${rankText}\n` +
+                            `💎 Tổng điểm: ${scoreText} điểm\n` +
+                            `✅ Số câu đúng: ${accText}\n` +
+                            `⏱️ Thời gian: ${timeText}`;
+
+            // Sử dụng textarea tạm thời kết hợp execCommand('copy') đảm bảo hoạt động trên mọi iframe & mobile
+            const tempInput = document.createElement("textarea");
+            tempInput.value = summary;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                const btn = document.getElementById('btn-copy');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<span>✅ Đã sao chép kết quả!</span>`;
+                btn.classList.replace('bg-emerald-600', 'bg-teal-700');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.replace('bg-teal-700', 'bg-emerald-600');
+                }, 2200);
+            } catch (err) {
+                // Fallback nếu không copy được
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function resetGame() {
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
